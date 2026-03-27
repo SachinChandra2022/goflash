@@ -7,7 +7,7 @@
 # --- Go Binaries & Build Artifacts ---
 /main
 /api
-worker
+/worker
 *.exe
 *.exe~
 *.dll
