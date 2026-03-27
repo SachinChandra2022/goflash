@@ -1,3 +1,10 @@
+# --- Environment Variables (CRITICAL: Do not remove) ---
+.env
+.env.local
+.env.production
+.env.*.local
+
+# --- Go Binaries & Build Artifacts ---
 main
 api
 worker
@@ -6,17 +13,36 @@ worker
 *.dll
 *.so
 *.dylib
+bin/
+dist/
 
-*.test
-
-*.out
-
+# --- Go Dependencies ---
 vendor/
-
 go.work
 
+# --- Node / React (Frontend) ---
+node_modules/
+goflash-ui/node_modules/
+goflash-ui/dist/
+goflash-ui/.env
+goflash-ui/.env.production
+.eslintcache
+
+# --- Docker & Infrastructure Data ---
+# We ignore the actual data folders so we don't upload 1GB of DB logs
+postgres_data/
+redis_data/
+kafka_data/
+prometheus_data/
+
+# --- IDEs & Editor Secrets ---
 .idea/
 .vscode/
+*.swp
+*.swo
 .DS_Store
+Thumbs.db
 
-postgres_data/
+# --- Logs ---
+*.log
+logs/

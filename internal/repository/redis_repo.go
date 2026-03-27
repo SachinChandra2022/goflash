@@ -26,13 +26,13 @@ func InitializeRedisSync() {
 func PurchaseProductRedis(productID int) error {
 	key := "product:1:quantity" 
 
-	val, err := database.Rdb.Get(database.Ctx, key).Result()
+	_, err := database.Rdb.Get(database.Ctx, key).Result()
     if err == redis.Nil {
         fmt.Println("DEBUG: Redis Key does not exist!")
     } else if err != nil {
         fmt.Println("DEBUG: Redis Error:", err)
     } else {
-        fmt.Printf("DEBUG: Current Redis Stock: %s\n", val)
+        // fmt.Printf("DEBUG: Current Redis Stock: %s\n", val)
     }
 
 	result, err := requestScript.Run(database.Ctx, database.Rdb, []string{key}).Int()

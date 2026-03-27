@@ -1,6 +1,85 @@
+# version: '3.8'
+
+# services:
+#   postgres:
+#     image: postgres:15-alpine
+#     container_name: goflash_db
+#     ports:
+#       - "5432:5432"
+#     environment:
+#       - POSTGRES_USER=user
+#       - POSTGRES_PASSWORD=password
+#       - POSTGRES_DB=goflash
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+#     networks:
+#       - goflash_net
+#   redis:
+#     image: redis:alpine
+#     container_name: goflash_redis
+#     ports:
+#       - "6379:6379"
+#     networks:
+#       - goflash_net
+  
+#   zookeeper:
+#     image: confluentinc/cp-zookeeper:7.3.0
+#     container_name: goflash_zookeeper
+#     environment:
+#       ZOOKEEPER_CLIENT_PORT: 2181
+#       ZOOKEEPER_TICK_TIME: 2000
+#     networks:
+#       - goflash_net
+  
+#   kafka:
+#       image: confluentinc/cp-kafka:7.3.0
+#       container_name: goflash_kafka
+#       ports:
+#         - "9092:9092"
+#       depends_on:
+#         - zookeeper
+#       environment:
+#         KAFKA_BROKER_ID: 1
+#         KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+#         # CHANGE localhost TO 127.0.0.1 HERE:
+#         KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://127.0.0.1:9092
+#         KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+#         KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+#         KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+#       networks:
+#         - goflash_net
+#   prometheus:
+#     image: prom/prometheus:latest
+#     container_name: goflash_prometheus
+#     ports:
+#       - "9090:9090"
+#     volumes:
+#       - ./prometheus.yml:/etc/prometheus/prometheus.yml
+#     networks:
+#       - goflash_net
+
+#   grafana:
+#     image: grafana/grafana:latest
+#     container_name: goflash_grafana
+#     ports:
+#       - "3000:3000"
+#     environment:
+#       - GF_SECURITY_ADMIN_PASSWORD=admin
+#     networks:
+#       - goflash_net
+
+
+
+# volumes:
+#   postgres_data:
+
+# networks:
+#   goflash_net:
+
 version: '3.8'
 
 services:
+  # --- Infrastructure ---
   postgres:
     image: postgres:15-alpine
     container_name: goflash_db
@@ -14,6 +93,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - goflash_net
+
   redis:
     image: redis:alpine
     container_name: goflash_redis
@@ -21,7 +101,7 @@ services:
       - "6379:6379"
     networks:
       - goflash_net
-  
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.0
     container_name: goflash_zookeeper
@@ -30,7 +110,7 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
     networks:
       - goflash_net
-  
+
   kafka:
     image: confluentinc/cp-kafka:7.3.0
     container_name: goflash_kafka
@@ -41,13 +121,14 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     networks:
       - goflash_net
-  
+
   prometheus:
     image: prom/prometheus:latest
     container_name: goflash_prometheus
@@ -68,7 +149,42 @@ services:
     networks:
       - goflash_net
 
+  # --- Application ---
+  api:
+    build: .
+    container_name: goflash_api
+    command: ./main-api
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - redis
+      - kafka
+    environment:
+      - GIN_MODE=release # Critical for speed
+    networks:
+      - goflash_net
 
+  worker:
+    build: .
+    container_name: goflash_worker
+    command: ./main-worker
+    depends_on:
+      - postgres
+      - redis
+      - kafka
+    networks:
+      - goflash_net
+
+  # --- Load Tester ---
+  k6:
+    image: grafana/k6:latest
+    container_name: goflash_k6
+    volumes:
+      - ./scripts:/scripts
+    networks:
+      - goflash_net
+    # We don't run it automatically, we will run it manually via command line
 
 volumes:
   postgres_data:

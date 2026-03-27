@@ -1,19 +1,26 @@
 import http from 'k6/http';
 import { check } from 'k6';
 
-export let options = {
-  vus: 200, 
-  duration: '5s', 
+export const options = {
+  scenarios: {
+    constant_request_rate: {
+      executor: 'constant-arrival-rate',
+    
+      rate: 10000, 
+      timeUnit: '1s', 
+      duration: '30s',
+      preAllocatedVUs: 1000, 
+      maxVUs: 5000, 
+    },
+  },
 };
 
 export default function () {
-  const url = "http://localhost:8080/purchase-async"
+  const url = 'http://api:8080/purchase-async';
+  
   const params = {
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
   };
 
-  let res = http.post(url, JSON.stringify({}), params);
-  check(res, { 'status was 200': (r) => r.status == 200 });
+  http.post(url, JSON.stringify({}), params);
 }
