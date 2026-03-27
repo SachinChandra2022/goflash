@@ -1,20 +1,20 @@
-# Build Stage
-FROM golang:alpine AS builder
+# STEP 1: Build the binaries
+FROM golang:1.22-alpine AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-# Build API and Worker binaries
-RUN go build -o main-api cmd/api/main.go
-RUN go build -o main-worker cmd/worker/main.go
+RUN go build -o api cmd/api/main.go
+RUN go build -o worker cmd/worker/main.go
 
-# Run Stage
+# STEP 2: Create the production image
 FROM alpine:latest
 WORKDIR /root/
-COPY --from=builder /app/main-api .
-COPY --from=builder /app/main-worker .
-# Copy scripts for k6
-COPY scripts/ ./scripts/ 
-
+# Copy the compiled binaries from the builder
+COPY --from=builder /app/api .
+COPY --from=builder /app/worker .
+# Copy the .env file if you have one (optional, Render handles env vars)
+# EXPOSE the port
 EXPOSE 8080
-CMD ["./main-api"]
+# We will override the CMD in the Render dashboard
+CMD ["./api"]
