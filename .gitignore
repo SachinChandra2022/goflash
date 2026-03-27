@@ -5,8 +5,8 @@
 .env.*.local
 
 # --- Go Binaries & Build Artifacts ---
-main
-api
+/main
+/api
 worker
 *.exe
 *.exe~
