@@ -2,19 +2,20 @@
 FROM golang:1.24-alpine AS builder
 WORKDIR /app
 
-# Install build dependencies
+# Install git for fetching private dependencies if needed
 RUN apk add --no-cache git
 
-# Copy dependencies first for better caching
+# Copy go.mod and go.sum first
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy the rest of the code
+# Copy EVERYTHING else
 COPY . .
 
-# Build with relative paths (Notice the ./ )
-RUN go build -o api ./cmd/api/main.go
-RUN go build -o worker ./cmd/worker/main.go
+# IMPORTANT: Build the directory (package), not the specific file
+# This is more robust against pathing quirks
+RUN go build -o api ./cmd/api
+RUN go build -o worker ./cmd/worker
 
 # Production Stage
 FROM alpine:latest
@@ -24,8 +25,7 @@ WORKDIR /root/
 COPY --from=builder /app/api .
 COPY --from=builder /app/worker .
 
-# Render will use the PORT env var, but we'll expose 8081 locally
-EXPOSE 8081
+# Render uses the PORT environment variable
+EXPOSE 8080
 
-# Default command (overridden for worker in Render)
 CMD ["./api"]
